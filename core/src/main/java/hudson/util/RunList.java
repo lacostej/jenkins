@@ -202,15 +202,16 @@ public class RunList<R extends Run> extends AbstractList<R> {
     /**
      * Returns the first streak of the elements that satisfy the given predicate.
      *
-     * For example, {@code filter([1,2,3,4],odd)==[1,3]} but {@code limit([1,2,3,4],odd)==[1]}.
+     * For example, {@code filter([1,2,3,4],odd)==[1,3]} but {@code limit([1,2,3,4],odd, false)==[1]}.
+     * Also {@code limit([1,2,3,4],even,false)==[]} but {@code limit([1,2,3,4],even,true)==[2]}
      */
-    private RunList<R> limit(final CountingPredicate<R> predicate) {
+    private RunList<R> limit(final CountingPredicate<R> predicate, final boolean startsAtFirst) {
         size = null;
         first = null;
         final Iterable<R> nested = base;
         base = new Iterable<R>() {
             public Iterator<R> iterator() {
-                return hudson.util.Iterators.limit(nested.iterator(),predicate);
+                return hudson.util.Iterators.limit(nested.iterator(),predicate, startsAtFirst);
             }
 
             @Override
@@ -260,16 +261,11 @@ public class RunList<R extends Run> extends AbstractList<R> {
      * {@code s&lt=;e}.
      */
     public RunList<R> byTimestamp(final long start, final long end) {
-        return
-        limit(new CountingPredicate<R>() {
+        return limit(new CountingPredicate<R>() {
             public boolean apply(int index, R r) {
-                return start<=r.getTimeInMillis();
-            }
-        }).filter(new Predicate<R>() {
-        	public boolean apply(R r) {
-        		return r.getTimeInMillis()<end;
-                    }
-        });
+                return start<=r.getTimeInMillis() && r.getTimeInMillis()<end;
+             }
+        }, true);
     }
 
     /**
@@ -293,6 +289,6 @@ public class RunList<R extends Run> extends AbstractList<R> {
             public boolean apply(int index, R r) {
                 return index < 10 || r.getTimeInMillis() >= t;
             }
-        });
+        }, false);
     }
 }
